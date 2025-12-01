@@ -1,0 +1,83 @@
+#*****************************************************************************
+# @file    Kconfig
+# @author  Karol Stefanik
+# @brief   Kconfig options for nrf-info-board client (Zephyr RTOS)
+#
+# This file defines configuration symbols for thread stack sizes, priorities,
+# MQTT topics, broker settings, buffer sizes, and reconnect delays.
+# It is included by the build system to generate configuration headers and
+# enable menuconfig support for the application.
+#
+# Copyright (c) 2025 Karol Stefanik
+# SPDX-License-Identifier: Apache-2.0
+#*****************************************************************************
+
+menu "nrf-client"
+
+config LTE_CONNECT_TIMEOUT_S
+    int "LTE connect timeout in seconds"
+    default 30
+
+config LTE_THREAD_STACK_SIZE
+    int "Stack size for LTE thread"
+    default 2048
+
+config LTE_THREAD_PRIORITY
+    int "Priority for LTE thread"
+    default 3
+
+config MQTT_THREAD_STACK_SIZE
+    int "Stack size for MQTT thread"
+    default 2048
+
+config MQTT_THREAD_PRIORITY
+    int "Priority for MQTT thread"
+    default 3
+
+config DISPLAY_THREAD_STACK_SIZE
+    int "Stack size for Display thread"
+    default 2048
+
+config DISPLAY_THREAD_PRIORITY
+    int "Priority for Display thread"
+    default 3
+
+config MQTT_STATUS_TOPIC
+    string "MQTT status topic"
+    default "nrf9151/status"
+
+config MQTT_CMD_TOPIC
+    string "MQTT command topic"
+    default "nrf9151/command"
+
+config MQTT_DISPLAY_TOPIC
+    string "MQTT display topic"
+    default "nrf9151/display"
+
+config MQTT_CLIENT_ID
+    string "MQTT Client ID"
+    help
+      Use a custom Client ID string. If not set, the client ID will be
+      generated based on IMEI number (for nRF91 Series based targets) or
+      randomly (for other platforms).
+    default ""
+
+config MQTT_BROKER_HOSTNAME
+    string "MQTT broker hostname"
+    default "mqtt.nordicsemi.academy"
+
+config MQTT_BROKER_PORT
+    int "MQTT broker port"
+    default 1883
+
+config MQTT_MESSAGE_BUFFER_SIZE
+    int "MQTT message buffer size"
+    default 185
+
+config MQTT_RECONNECT_DELAY_S
+    int "Seconds to delay before attempting to reconnect to the broker."
+    default 60
+
+endmenu
+
+source "Kconfig.zephyr"

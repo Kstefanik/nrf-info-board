@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Info Board Controller</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Info Board Controller</h1>
+    
+    <div style="display: flex; gap: 20px;">
+        <div class="container" style="flex: 1;">
+            <div>
+                <label>Display:</label><br>
+                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 1" class="display-row"></textarea>
+                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 2" class="display-row"></textarea>
+                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 3" class="display-row"></textarea>
+                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 4" class="display-row"></textarea>
+                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 5" class="display-row"></textarea>
+                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 6" class="display-row"></textarea>
+                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 7" class="display-row"></textarea>
+            </div>
+            <button onclick="sendDisplayMessage()">Display on Info Board</button>
+        </div>
+        <div class="container" style="flex: 1;">
+            <div>
+                <label>Logs:</label><br>
+                <pre id="logs" style="width:100%; min-height:120px; height:350px; overflow:auto; background:#fff; border-radius:4px; border:1px solid #ccc; padding:10px; font-family:monospace; white-space:pre-wrap; word-break:break-all;"></pre>
+                <button class="secondary-btn" onclick="clearLogs()" style="margin-left:10px;">Clear Logs</button>
+            </div>
+        </div>
+    </div>
+    <div class="container" style="flex: 1;">
+        <div>
+            <label>Commands:</label><br>
+        </div>
+        <button class="secondary-btn" onclick="sendCommand('clear')">Clear Display</button>
+        <button class="secondary-btn" onclick="sendCommand('status')" style="margin-left:10px;">Get Status</button>
+        <button class="secondary-btn" onclick="sendCommand('reboot')" style="margin-left:10px;">Reboot</button>
+        <button class="secondary-btn" onclick="sendCommand('uptime')" style="margin-left:10px;">Get Uptime</button>
+    </div>
+    
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

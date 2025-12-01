@@ -1,0 +1,54 @@
+/*****************************************************************************
+* @file    app.overlay
+* @author  Karol Stefanik
+* @brief   Device tree overlay for nrf-info-board client (Zephyr RTOS)
+*
+* Copyright (c) 2022 Nordic Semiconductor ASA
+* SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+*
+* Copyright (c) 2025 Karol Stefanik
+* SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+****************************************************************************/
+
+// Disable unused peripherals to save power
+&adc 		{status = "disabled";};
+&i2c2 		{status = "disabled";};
+&uart1 		{status = "disabled";};
+&pwm0 	    {status = "disabled";};
+
+// led3 is used for logging control
+&pwm_led0 	{status = "disabled";};
+&led0 		{status = "disabled";};
+&led1 		{status = "disabled";};
+&led2 		{status = "disabled";};
+
+// button3 is used for logging control
+&button0 	{status = "disabled";};
+&button1 	{status = "disabled";};
+&button2 	{status = "disabled";};
+
+
+/ {
+    chosen {
+        zephyr,display = &ssd16xx;
+    };
+};
+
+&arduino_spi {
+    status = "okay";
+    cs-gpios = <&arduino_header 16 GPIO_ACTIVE_LOW>;	/* D10 */
+    ssd16xx: ssd16xxfb@0 {
+        compatible = "waveshare,HINK-E0213-G01",
+                     "solomon,ssd1680",
+                     "solomon,ssd16xxfb";
+        status = "okay";
+        spi-max-frequency = <8000000>;
+        reg 	= <0>;
+        width 	= <250>;
+        height 	= <122>;
+        orientation-flipped;
+        dc-gpios 	= <&arduino_header 	15 GPIO_ACTIVE_LOW>;        /* D9 */
+        reset-gpios = <&arduino_header 	14 GPIO_ACTIVE_LOW>;        /* D8 */
+        busy-gpios 	= <&arduino_header 	13 GPIO_ACTIVE_HIGH>;       /* D7 */
+    };
+};

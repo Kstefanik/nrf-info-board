@@ -1,0 +1,59 @@
+/*****************************************************************************
+ * @file    style.css
+ * @author  Karol Stefanik
+ * @brief   Styles for nrf-info-board server client
+ *
+ * Copyright (c) 2025 Karol Stefanik
+ * SPDX-License-Identifier: Apache-2.0
+ ****************************************************************************/
+
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+h1 {
+    color: #333;
+    text-align: center;
+}
+.container {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+textarea {
+    font-family: monospace;
+    resize: none;
+    overflow: hidden;
+    font-size: 2em;
+}
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 10px 0;
+    cursor: pointer;
+    border-radius: 4px;
+}
+button:hover {
+    background-color: #45a049;
+}
+.secondary-btn {
+    background-color: #2196F3;
+}
+.secondary-btn:hover {
+    background-color: #1976D2;
+}
+.character-count {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+}
