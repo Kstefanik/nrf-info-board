@@ -1,3 +1,5 @@
 .vscode/
 build/
 .venv/
+*.log
+last_message.txt

@@ -31,6 +31,22 @@ static void lte_handler(const struct lte_lc_evt *const evt)
     case LTE_LC_EVT_RRC_UPDATE:
         LOG_INF("RRC mode: %s", evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED ? "Connected" : "Idle");
         break;
+    case LTE_LC_EVT_PSM_UPDATE:
+        LOG_INF("PSM updated: TAU=%d s, Active time=%d s", evt->psm_cfg.tau, evt->psm_cfg.active_time);
+        break;
+    case LTE_LC_EVT_CELL_UPDATE:
+        LOG_INF("Cell updated: TAC=0x%04X, Cell ID=0x%08X", evt->cell.tac, evt->cell.id);
+        break;
+    case LTE_LC_EVT_NEIGHBOR_CELL_MEAS:
+        LOG_INF("Neighbor cell measurement: found %d neighbor cells", evt->cells_info.ncells_count);
+        break;
+    case LTE_LC_EVT_MODEM_SLEEP_EXIT:
+        LOG_INF("Modem exited sleep");
+        break;
+    case LTE_LC_EVT_MODEM_SLEEP_ENTER:
+        LOG_INF("Modem entered sleep");
+        k_timer_start(&wakeup_timer, K_SECONDS(CONFIG_WAKEUP_TIMER_PERIOD_SECONDS), K_NO_WAIT);
+        break;
     default:
         break;
     }

@@ -26,6 +26,8 @@
 
 LOG_MODULE_REGISTER(mqtt_utils, LOG_LEVEL_INF);
 
+static bool first_connect = true;
+
 static uint8_t rx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t tx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static uint8_t payload_buf[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
@@ -33,9 +35,6 @@ static uint8_t payload_buf[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
 static struct sockaddr_storage broker;
 
 static const command_t commands[] = {
-    { CMD_GET_STATUS,  "status" },
-    { CMD_CLEAR_DISPLAY, "clear" },
-    { CMD_GET_UPTIME, "uptime" },
     { CMD_REBOOT, "reboot" },
     { CMD_UNKNOWN, NULL }
 };
@@ -57,26 +56,31 @@ static int get_received_payload(struct mqtt_client *c, size_t length)
 {
     int ret;
     int err = 0;
+    size_t read_len = length;
 
-    if (length > sizeof(payload_buf)) {
+    if (read_len > sizeof(payload_buf)) {
+        read_len = sizeof(payload_buf);
         err = -EMSGSIZE;
     }
 
-    while (length > sizeof(payload_buf)) {
-        ret = mqtt_read_publish_payload_blocking(
-                c, payload_buf, (length - sizeof(payload_buf)));
+    // Read the payload that fits into the buffer
+    ret = mqtt_readall_publish_payload(c, payload_buf, read_len);
+    if (ret) {
+        return ret;
+    }
+
+    // Discard the remaining payload if any
+    size_t remaining = length - read_len;
+    while (remaining > 0) {
+        uint8_t dummy[32];
+        size_t chunk = remaining > sizeof(dummy) ? sizeof(dummy) : remaining;
+        ret = mqtt_read_publish_payload_blocking(c, dummy, chunk);
         if (ret == 0) {
             return -EIO;
         } else if (ret < 0) {
             return ret;
         }
-
-        length -= ret;
-    }
-
-    ret = mqtt_readall_publish_payload(c, payload_buf, length);
-    if (ret) {
-        return ret;
+        remaining -= ret;
     }
 
     return err;
@@ -155,6 +159,12 @@ void mqtt_evt_handler(struct mqtt_client *const c, const struct mqtt_evt *evt)
         if (err) {
             LOG_ERR("Could not subscribe to topics: %d", err);
         }
+
+        if (first_connect) {
+            // Send status message upon first connection
+            k_work_submit(&wakeup_workq);
+            first_connect = false;
+        }
         break;
 
     case MQTT_EVT_DISCONNECT:
@@ -163,7 +173,7 @@ void mqtt_evt_handler(struct mqtt_client *const c, const struct mqtt_evt *evt)
 
     case MQTT_EVT_PUBLISH:
         const struct mqtt_publish_param *p = &evt->param.publish;
-        LOG_INF("MQTT PUBLISH result=%d len=%d", evt->result, p->message.payload.len);
+        LOG_INF("MQTT message received result=%d len=%d", evt->result, p->message.payload.len);
 
         err = get_received_payload(c, p->message.payload.len);
 
@@ -179,6 +189,7 @@ void mqtt_evt_handler(struct mqtt_client *const c, const struct mqtt_evt *evt)
         }
 
         if (err >= 0) {
+            // Handling display topic messages
             if (strncmp(p->message.topic.topic.utf8, CONFIG_MQTT_DISPLAY_TOPIC, p->message.topic.topic.size) == 0) {
                 struct display_message msg = {0};
                 size_t copy_len = p->message.payload.len < sizeof(msg.text) - 1 ? p->message.payload.len : sizeof(msg.text) - 1;
@@ -188,60 +199,22 @@ void mqtt_evt_handler(struct mqtt_client *const c, const struct mqtt_evt *evt)
                 int put_err = k_msgq_put(&display_msgq, &msg, K_NO_WAIT);
                 if (put_err) {
                     LOG_ERR("Failed to send display message: %d", put_err);
-                } else {
+                } 
+                else {
                     LOG_INF("Display message queued: %s", msg.text);
                 }
                 return;
             }
+            // Handling command topic messages
             else if (strncmp(p->message.topic.topic.utf8, CONFIG_MQTT_CMD_TOPIC, p->message.topic.topic.size) == 0) {
 
                 size_t cmd_len = 0;
                 command_id_t cmd_id = parse_command(payload_buf, p->message.payload.len, &cmd_len);
 
-                switch (cmd_id) {
-                    case CMD_GET_STATUS:
-                        if (p->message.payload.len == cmd_len) {
-                            const char *reply = get_status();
-                            err = data_publish(c, MQTT_QOS_1_AT_LEAST_ONCE, CONFIG_MQTT_STATUS_TOPIC, (uint8_t *)reply, strlen(reply));
-                            if (err) {
-                                LOG_ERR("Failed to publish status: %d", err);
-                            }
-                            else {
-                                LOG_INF("Status command received, replied with status");
-                            }
-                        }
-                        break;
-                    
-                    case CMD_CLEAR_DISPLAY:
-                        if (p-> message.payload.len == cmd_len) {
-                            struct display_message clear_msg = {0};
-                            strncpy(clear_msg.text, " ", sizeof(clear_msg.text) - 1);
-                            err = k_msgq_put(&display_msgq, &clear_msg, K_NO_WAIT);
-                            if (err) {
-                                LOG_ERR("Failed to send clear display message: %d", err);
-                            }
-                            else {
-                                LOG_INF("Clear display command received, display cleared");
-                            }
-                        }
-                        break;
-
-                    case CMD_GET_UPTIME:
-                        if (p->message.payload.len == cmd_len) {
-                            int64_t uptime_s = k_uptime_get() / 1000;
-                            char uptime_str[32];
-                            int len = snprintf(uptime_str, sizeof(uptime_str), "Uptime: %llu seconds\n", uptime_s);
-                            err = data_publish(c, MQTT_QOS_1_AT_LEAST_ONCE, CONFIG_MQTT_STATUS_TOPIC, (uint8_t *)uptime_str, len);
-                            if (err) {
-                                LOG_ERR("Failed to publish uptime: %d", err);
-                            } 
-                            else {
-                                LOG_INF("Uptime command received, replied with uptime");
-                            }
-                        }
-                        break;
+                switch (cmd_id) {           
                     case CMD_REBOOT:
                         LOG_INF("Rebooting system...");
+                        k_sleep(K_MSEC(5000));
                         sys_reboot(SYS_REBOOT_COLD);
                         break;
 
@@ -333,8 +306,7 @@ static int broker_init(void)
             broker4->sin_family = AF_INET;
             broker4->sin_port = htons(CONFIG_MQTT_BROKER_PORT);
 
-            inet_ntop(AF_INET, &broker4->sin_addr.s_addr,
-                  ipv4_addr, sizeof(ipv4_addr));
+            inet_ntop(AF_INET, &broker4->sin_addr.s_addr, ipv4_addr, sizeof(ipv4_addr));
             LOG_INF("IPv4 Address found %s", (char *)(ipv4_addr));
 
             break;
@@ -355,17 +327,20 @@ static int broker_init(void)
 
 static const uint8_t* client_id_get(void)
 {
+    int err;
+
     static uint8_t client_id[MAX(sizeof(CONFIG_MQTT_CLIENT_ID),
                      CLIENT_ID_LEN)];
 
     if (strlen(CONFIG_MQTT_CLIENT_ID) > 0) {
-        snprintf(client_id, sizeof(client_id), "%s",
-             CONFIG_MQTT_CLIENT_ID);
+        err  = snprintf(client_id, sizeof(client_id), "%s", CONFIG_MQTT_CLIENT_ID);
+        if (err < 0) {
+            LOG_ERR("Failed to format client ID, error: %d", err);
+        }
         goto exit;
     }
 
     char imei_buf[CGSN_RESPONSE_LENGTH + 1];
-    int err;
 
     err = nrf_modem_at_cmd(imei_buf, sizeof(imei_buf), "AT+CGSN");
     if (err) {
@@ -375,7 +350,11 @@ static const uint8_t* client_id_get(void)
 
     imei_buf[IMEI_LEN] = '\0';
 
-    snprintf(client_id, sizeof(client_id), "nrf-%.*s", IMEI_LEN, imei_buf);
+    err = snprintf(client_id, sizeof(client_id), "nrf-%.*s", IMEI_LEN, imei_buf);
+    if (err < 0) {
+        LOG_ERR("Failed to format client ID, error: %d", err);
+        goto exit;
+    }
 
 exit:
     LOG_INF("client_id = %s", (char *)(client_id));

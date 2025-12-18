@@ -1,3 +1,13 @@
+<!--
+/*****************************************************************************
+ * @file    index.html
+ * @author  Karol Stefanik
+ * @brief   Main HTML template for nrf-info-board server client
+ *
+ * Copyright (c) 2025 Karol Stefanik
+ * SPDX-License-Identifier: Apache-2.0
+ ****************************************************************************/
+-->
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,38 +17,48 @@
 <body>
     <h1>Info Board Controller</h1>
     
-    <div style="display: flex; gap: 20px;">
-        <div class="container" style="flex: 1;">
+    <div class="container">
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
             <div>
-                <label>Display:</label><br>
-                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 1" class="display-row"></textarea>
-                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 2" class="display-row"></textarea>
-                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 3" class="display-row"></textarea>
-                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 4" class="display-row"></textarea>
-                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 5" class="display-row"></textarea>
-                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 6" class="display-row"></textarea>
-                <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 7" class="display-row"></textarea>
+                <div style="display: flex; gap: 20px;">
+                    <div>
+                        <label>Display:</label><br>
+                        <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 1" class="display-row"></textarea>
+                        <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 2" class="display-row"></textarea>
+                        <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 3" class="display-row"></textarea>
+                        <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 4" class="display-row"></textarea>
+                        <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 5" class="display-row"></textarea>
+                        <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 6" class="display-row"></textarea>
+                        <textarea id="message" rows="1" cols="25" maxlength="25" placeholder="Row 7" class="display-row"></textarea>
+                    </div>
+                    <div>
+                        <label>To display:</label><br>
+                        <textarea id="sent-output" rows="7" cols="25" readonly>{{ to_display }}</textarea>
+                        <label>Next command:</label><br>
+                        <textarea id="next-command" rows="1" cols="25" readonly>{{ command_to_send }}</textarea>
+                    </div>
+                </div>
+                <button onclick="get_display_message()">Display on Info Board</button>
             </div>
-            <button onclick="sendDisplayMessage()">Display on Info Board</button>
-        </div>
-        <div class="container" style="flex: 1;">
-            <div>
-                <label>Logs:</label><br>
-                <pre id="logs" style="width:100%; min-height:120px; height:350px; overflow:auto; background:#fff; border-radius:4px; border:1px solid #ccc; padding:10px; font-family:monospace; white-space:pre-wrap; word-break:break-all;"></pre>
-                <button class="secondary-btn" onclick="clearLogs()" style="margin-left:10px;">Clear Logs</button>
+
+            <div style="margin-left: 20px; padding-left: 20px;">
+                <label>Commands:</label><br>
+                <button class="secondary-btn" onclick="get_command('reboot')" style="margin-left:10px;">Reboot</button>
+                <button class="secondary-btn" onclick="get_command('')" style="margin-left:10px;">Clear CMD</button>
             </div>
         </div>
     </div>
-    <div class="container" style="flex: 1;">
+
+    <div class="container">
         <div>
-            <label>Commands:</label><br>
+            <label>Logs:</label><br>
+            <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <pre id="logs" style="flex: 1; min-height:120px; height:350px; overflow:auto; background:#fff; border-radius:4px; border:1px solid #ccc; padding:10px; font-family:monospace; white-space:pre-wrap; word-break:break-all; margin: 0;"></pre>
+                <button class="secondary-btn" onclick="clear_logs()" style="margin: 0;">Clear Logs</button>
+            </div>
         </div>
-        <button class="secondary-btn" onclick="sendCommand('clear')">Clear Display</button>
-        <button class="secondary-btn" onclick="sendCommand('status')" style="margin-left:10px;">Get Status</button>
-        <button class="secondary-btn" onclick="sendCommand('reboot')" style="margin-left:10px;">Reboot</button>
-        <button class="secondary-btn" onclick="sendCommand('uptime')" style="margin-left:10px;">Get Uptime</button>
     </div>
-    
+
     <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

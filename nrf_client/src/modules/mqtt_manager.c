@@ -15,6 +15,7 @@
 #include <zephyr/net/socket.h>
 #include <zephyr/net/mqtt.h>
 #include <zephyr/sys/reboot.h>
+#include <stdio.h>
 
 #include "utils/mqtt_utils.h"
 #include "utils/common.h"
@@ -23,6 +24,29 @@ LOG_MODULE_REGISTER(mqtt_manager, LOG_LEVEL_INF);
 
 static struct mqtt_client client;
 static struct pollfd fds;
+
+void wakeup_workq_handler(struct k_work *work)
+{
+    int err;
+    char msg[CONFIG_MQTT_MESSAGE_BUFFER_SIZE + 128];
+    int64_t uptime = k_uptime_get() / 1000;
+
+    snprintf(msg, sizeof(msg), "{\"status\": \"online\", \"uptime\": %lld, \"display\": \"%s\"}", 
+             uptime, currently_displaying);
+
+    /*
+    Message format
+    {
+    "status": "online", 
+    "uptime": <uptime in seconds>,
+    "display": <current display text>
+    }
+    */
+    err = data_publish(&client, MQTT_QOS_1_AT_LEAST_ONCE, CONFIG_MQTT_STATUS_TOPIC, (uint8_t *)msg, strlen(msg));
+    if (err) {
+        LOG_ERR("Failed to publish data: %d", err);
+    }
+}
 
 static void mqtt_manager_entry(void) {
     int err;
@@ -35,6 +59,7 @@ static void mqtt_manager_entry(void) {
         if (err) {
             LOG_ERR("Timeout waiting for LTE connection: %d", err);
             LOG_INF("Rebooting system to recover...");
+            k_sleep(K_MSEC(5000));
             sys_reboot(SYS_REBOOT_COLD);
         }
 
@@ -59,7 +84,10 @@ static void mqtt_manager_entry(void) {
         err = fds_init(&client, &fds);
         if (err) {
             LOG_ERR("Error in fds_init: %d", err);
-            mqtt_disconnect(&client);
+            err = mqtt_disconnect(&client);
+            if (err) {
+                LOG_ERR("Error in mqtt_disconnect: %d", err);
+            }
             continue;
         }
 
@@ -98,7 +126,10 @@ static void mqtt_manager_entry(void) {
         }
 
         LOG_INF("Disconnecting MQTT client");
-        mqtt_disconnect(&client);
+        err = mqtt_disconnect(&client);
+        if (err) {
+            LOG_ERR("Error in mqtt_disconnect: %d", err);
+        }
 
         goto do_connect;
     }

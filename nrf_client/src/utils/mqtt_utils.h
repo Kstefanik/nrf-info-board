@@ -25,10 +25,7 @@
 
 /* Supported command IDs for MQTT messages */
 typedef enum {
-    CMD_GET_STATUS  = 1,
-    CMD_CLEAR_DISPLAY = 2,
-    CMD_GET_UPTIME = 3,
-    CMD_REBOOT = 4,
+    CMD_REBOOT = 1,
     CMD_UNKNOWN = 255
 } command_id_t;
 

@@ -7,27 +7,19 @@
  * SPDX-License-Identifier: Apache-2.
  *****************************************************************************/
 
-#include <zephyr/logging/log.h>
 #include "common.h"
-
-LOG_MODULE_REGISTER(common, LOG_LEVEL_INF);
 
 K_MSGQ_DEFINE(display_msgq, sizeof(struct display_message), 20, 4);
 
 K_SEM_DEFINE(lte_connected, 0, 1);
 K_SEM_DEFINE(mqtt_connected, 0, 1);
 
-char* get_status(void)
+K_WORK_DEFINE(wakeup_workq, wakeup_workq_handler);
+
+void wakeup_timer_handler(struct k_timer *dummy)
 {
-    static char status_buf[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
-    int err;
-
-    err = snprintf(status_buf, sizeof(status_buf), "Displaying:\n-------------------------\n%s\n-------------------------\n", currently_displaying);
-    if (err < 0) {
-        LOG_ERR("Snprintf failed");
-        return "Snprintf failed";
-    }
-
-    return status_buf;
+    k_work_submit(&wakeup_workq);
 }
+
+K_TIMER_DEFINE(wakeup_timer, wakeup_timer_handler, NULL);
 

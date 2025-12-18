@@ -20,7 +20,16 @@ LOG_MODULE_REGISTER(display_manager, LOG_LEVEL_INF);
 
 static const struct device *display_dev;
 static uint8_t font_height, font_width;
-char currently_displaying[CONFIG_MQTT_MESSAGE_BUFFER_SIZE] = "None";
+
+char currently_displaying[CONFIG_MQTT_MESSAGE_BUFFER_SIZE] = 
+    "                         \n"
+    "                         \n"
+    "                         \n"
+    "         Welcome         \n"
+    "                         \n"
+    "                         \n"
+    "                         \n";
+                         
 
 static int display_init(void)
 {
@@ -61,7 +70,7 @@ static int display_init(void)
 static int print_str_to_display(char *message, int x, int y)
 {
     int err;
-    err = cfb_framebuffer_clear(display_dev, true);
+    err = cfb_framebuffer_clear(display_dev, false);
     if (err) {
         LOG_ERR("CFB framebuffer clear failed");
         return err;
@@ -82,7 +91,7 @@ static int print_str_to_display(char *message, int x, int y)
 static int print_display_msg(struct display_message msg)
 {
     int err;
-    err = cfb_framebuffer_clear(display_dev, true);
+    err = cfb_framebuffer_clear(display_dev, false);
     if (err) {
         LOG_ERR("CFB framebuffer clear failed");
         return err;
@@ -130,14 +139,12 @@ static void display_manager_entry(void)
     if (err) {
         LOG_ERR("Print to display failed");
     }
-    err = snprintf(currently_displaying, sizeof(currently_displaying), "Welcome");
-    if (err < 0) {
-        LOG_ERR("Snprintf failed");
-    }
     while (1) {
         struct display_message msg;
         LOG_INF("Display thread waiting for message...");
         k_msgq_get(&display_msgq, &msg, K_FOREVER);
+        LOG_INF("Display thread got message: %s", msg.text);
+
         err = display_blanking_off(display_dev);
         if (err) {
             LOG_ERR("Display blanking off failed");

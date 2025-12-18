@@ -14,6 +14,10 @@
 
 menu "nrf-client"
 
+config  WAKEUP_TIMER_PERIOD_SECONDS
+    int "Wakeup timer period in seconds. Determines how often the modem wakes up to send data."
+    default 30
+
 config LTE_CONNECT_TIMEOUT_S
     int "LTE connect timeout in seconds"
     default 30
